@@ -1,4 +1,4 @@
-#############################
+##############################
 # Punto 2
 ##############################
 
@@ -228,6 +228,7 @@ grafico_2 <- ggplot(datos, aes(x = salario_mensual, fill = genero)) +
         axis.text.y = element_text(angle = 0, vjust = 0.5, hjust=1),
         legend.position = "top") 
 grafico_2
+
 ##Fin del código ##git checkout -b 
 
 
