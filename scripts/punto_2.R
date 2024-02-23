@@ -229,6 +229,11 @@ grafico_2 <- ggplot(datos, aes(x = salario_mensual, fill = genero)) +
         legend.position = "top") 
 grafico_2
 
+## Guardar base de datos 
+
+saveRDS(datos, "stores/database.rds")
+
+                     
 ##Fin del código ##git checkout -b 
 
 
