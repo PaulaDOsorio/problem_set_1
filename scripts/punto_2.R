@@ -237,3 +237,48 @@ saveRDS(datos, "stores/database.rds")
 ##Fin del código ##git checkout -b 
 
 
+######################################
+#Punto 5a
+
+#cargar paquetes necesarios
+p_load(rio, tidyverse,caret, gridExtra,skimr) 
+
+#establecer semilla para hacer replicable el proceso
+set.seed(10101)
+
+#Dividir la muestra para que el 70% se utilice para entrenamiento y el 30% para pruebas
+inTrain <- createDataPartition(
+  y = datos$log_salario_m,  
+  p = .70, 
+  list = FALSE
+)
+
+training <- datos[ inTrain,]
+testing  <- datos[-inTrain,]
+
+#Punto 5b
+
+#Definir las especificaciones de los modelos a probar
+modelo_1 <- log_salario_m ~ edad + edad_2
+modelo_2 <- log_salario_m ~ mujer
+#modelo_3 <- 
+#modelo_4 <-
+#modelo_5 <-
+#modelo_6 <-
+#modelo_7 <-
+#modelo_8 <-
+
+#modelos <- c(modelo_1,modelo_2,modelo_3,modelo_4,modelo_5)
+modelos <- c(modelo_1,modelo_2)
+
+  t_RMSE <- function(modelos,training, testing, var_y){
+    resultados <- tibble()
+    for (i in 1:length(modelos)) {
+      m <- lm(modelos[[i]], data=training) #saca los betas del modelo con los datos de entrenamiento
+      p <- predict(m, testing) #calcula la variable dependiente con el modelo para los x de prueba
+      score<- RMSE(p, testing[[var_y]]) #calcula el RMSE del modelo estimado
+      resultados <- bind_rows(resultados, tibble(modelo=paste0("modelo",i), RMSE=score)) #llenado de tabla con los resultados 
+    }
+    return(resultados) #devuelve el resultado de la función
+  }
+  tabla <- t_RMSE(modelos,training, testing, "log_salario_m") #correr función con los inputs específicos 
