@@ -258,18 +258,23 @@ testing  <- datos[-inTrain,]
 
 #Punto 5b
 
+#crear variables no lineales para especificaciones más complejas
+datos$estrato_4 <- datos$estrato^4
+datos$exp_trabajo_actual_2 <- datos$exp_trabajo_actual^2
+
+
 #Definir las especificaciones de los modelos a probar
 modelo_1 <- log_salario_m ~ edad + edad_2
 modelo_2 <- log_salario_m ~ mujer
-#modelo_3 <- log_salario_m ~ mujer+edad + edad_2 + secundaria + media + superior + informal
-#modelo_4 <-
-#modelo_5 <-
-#modelo_6 <-
-#modelo_7 <-
-#modelo_8 <-
+modelo_3 <- log_salario_m ~ mujer+ edad + edad_2 + secundaria + media + superior + informal
+modelo_4 <-log_salario_m ~ edad + edad_2 + estrato + busca_trabajo
+modelo_5 <-log_salario_m ~ superior + exp_trabajo_actual
+modelo_6 <-log_salario_m ~ mujer + edad + edad_2 + busca_trabajo + superior 
+modelo_7 <-log_salario_m ~ mujer + edad + edad_2 + estrato_4 + busca_trabajo
+modelo_8 <-log_salario_m ~ mujer + edad + edad_2 + busca_trabajo + superior + exp_trabajo_actual_2 + hijos_hogar + cabecera
 
-#modelos <- c(modelo_1,modelo_2,modelo_3,modelo_4,modelo_5)
-modelos <- c(modelo_1,modelo_2)
+modelos <- c(modelo_1,modelo_2,modelo_3,modelo_4,modelo_5,modelo_6,modelo_7,modelo_8)
+
 
   t_RMSE <- function(modelos,training, testing, var_y){
     resultados <- tibble()
@@ -288,15 +293,15 @@ modelos <- c(modelo_1,modelo_2)
   ctrl <- trainControl(method = "LOOCV") #establece el método de cross-validation a utilizar
   
   #se utiliza el método solo con los 2 modelos con los errores predictivos más bajos!
-  #para el modelo #
-  cross_validation_1 <- train(modelo_1,data = datos,method = 'lm',trControl= ctrl)
+  #para el modelo 3
+  cross_validation_1 <- train(modelo_3,data = datos,method = 'lm',trControl= ctrl)
   score1<-RMSE(cross_validation_1$pred$pred, datos$log_salario_m) #se guarda el resultado de error de predicción
   
-  #para el modelo #
-  cross_validation_2 <- train(modelo_2,data = datos,method = 'lm',trControl= ctrl)
+  #para el modelo 8
+  cross_validation_2 <- train(modelo_8,data = datos,method = 'lm',trControl= ctrl)
   score2<-RMSE(cross_validation_2$pred$pred, datos$log_salario_m) #se guarda el resultado de error de predicción
   
   #comparar el error del testeo con la validación LOOCV
-  comparativo<- data.frame( Model= c(1, 2),RMSE_vsa= c(tabla[1,2], tabla[2,2]),RMSE_loocv= c(score1, score2))
+  comparativo<- data.frame( Model= c(3, 8),RMSE_vsa= c(as.numeric(tabla[3,2]), as.numeric(tabla[8,2])),RMSE_loocv= c(score1, score2))
   
-  head(comparativo)
+  comparativo
