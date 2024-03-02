@@ -1,13 +1,23 @@
-##############################
-# Punto 2
-##############################
+############################################
+########## Problem set 1            ########
+###### Big Data y Maching Learning #########
+###### Paula Osorio:  ############
+###### Sandra Gamarra: 202225782 ###########
+###### Erika M. Macías:  #########  
+###### Ingrith Sierra:   #########
+############################################
+
+################
+### Punto 2 ###
+###############
 
 
 # Cargar paquete necesarios -----------------------------
 # install.packages('pacman')
 require(pacman)
-p_load(tidyverse,rvest, Hmisc, lattice, survival, Formula, ggplot2, 
-       robustHD, psych, openxlsx, writexl, robotstxt, showtext)
+p_load(rio, skimr, visdat, corrplot, stargazer, tidyverse,rvest, 
+       Hmisc, lattice, survival, Formula, ggplot2, robustHD, psych, 
+       openxlsx, writexl, robotstxt, showtext)
 
 # Cargar datos ------------------------------------------
 
@@ -26,8 +36,57 @@ for (i in 1:10){
   datos <- bind_rows(datos,my_table)
 }
 
-# Limpieza de la base de datos
+# Inspeccionando los datos
+head(datos)
+skim (datos) %>% head()
 
+# Mirando ggplot de salario
+## + geometry
+ggplot(data = datos , mapping = aes(x = age , y = y_ingLab_m)) +
+  geom_point(col = "red" , size = 0.5)
+## by group
+ggplot(data = datos , 
+       mapping = aes(x = age , y = y_ingLab_m , group=as.factor(formal) , color=as.factor(formal))) +
+  geom_point()
+
+## density: income by sex
+g1 <- ggplot(data=datos) + 
+  geom_histogram(mapping = aes(x=y_ingLab_m , group=as.factor(sex) , fill=as.factor(sex)))
+g1
+g1 + scale_fill_manual(values = c("0"="red" , "1"="blue") , label = c("0"="Hombre" , "1"="Mujer") , name = "Sexo")
+
+## box_plot: estrato1 vs totalHoursWorked
+box_plot <- ggplot(data=datos , mapping = aes(as.factor(estrato1) , totalHoursWorked)) + 
+  geom_boxplot() 
+box_plot
+
+## add another geometry
+box_plot <- box_plot +
+  geom_point(aes(colour=as.factor(sex))) +
+  scale_color_manual(values = c("0"="red" , "1"="blue") , label = c("0"="Hombre" , "1"="Mujer") , name = "Sexo")
+box_plot
+
+# Limpieza de la base de datos
+# Ver variables con datos missing
+datos_miss <- skim(datos) %>% select( skim_variable, n_missing)
+
+Nobs= nrow(datos) 
+Nobs
+
+datos_miss<- datos_miss %>% mutate(p_missing= n_missing/Nobs)
+head(datos_miss)
+
+# Ordenar variables con mayor número de missing
+datos_miss <- datos_miss %>% arrange(-n_missing) ## or arrange(desc(n_missing))
+datos_miss<- datos_miss %>% filter(n_missing!= 0)
+#Visualizando la estructura de los missing
+ggplot(datos_miss, aes(x = reorder(skim_variable, +p_missing) , y =  p_missing)) +
+  geom_bar(stat = "identity", fill = "skyblue", color = "black") +
+  coord_flip() +
+  labs(title = "N Missing Per Variable", x = "Var Name", y = "Missings")+ 
+  theme(axis.text = element_text(size = 5)) 
+
+#Filtramos datos de interés
 # Trabajadores con Edad mayores de 18 años)
 
 datos <- datos[datos$age >= 18, ]
@@ -124,10 +183,6 @@ datos$cabecera <- ifelse(datos$clase == 1, 1, 0)
 
 datos <- rename(datos, c("horas_trab_usual" = "hoursWorkUsual"))
 
-# Logaritmo del Salario
-
-datos$log_salario_m <- log(datos$salario_mensual)
-
 # Ciudad
 
 datos <- rename(datos, c("ciudad" = "dominio"))
@@ -141,26 +196,66 @@ datos<- subset(datos, select = c("directorio", "secuencia_p", "orden",
                                  "media", "superior", "salario_mensual",
                                  "ingreso_total", "exp_trabajo_actual",
                                  "estrato", "cabecera", "horas_trab_usual",
-                                 "ocupacion", "log_salario_m", "informal",
+                                 "ocupacion", "informal",
                                  "ciudad"))
 
-# 2.c. Limpieza de valores faltantes 
+# Vemos datos faltantes de las variables seleccionadas
+vis_dat(datos)
+vis_miss(datos)
 
-# Eliminamos las observaciones que tienen valores faltantes en el las siguientes variables:
-# salario nominal mensual
+# create a dataset with all variables== 1 if missing
+db1 <- datos %>% mutate_all(~ifelse(!is.na(.), 1, 0))
+## drop  variables with not missing or  with all missing.
 
-datos <- datos %>% filter(!is.na(salario_mensual))
+db1 <-  datos %>%  select(which(apply(db1, 2, sd) > 0))
+
+M <- cor(db1)
+corrplot(M) 
+
+# Vemos la distribución de salario_mensual que es la variable con missing
+ggplot(datos, aes(salario_mensual)) +
+  geom_histogram(color = "#000000", fill = "#0099F8") +
+  ggtitle("Distribucion Salario Mensual") +
+  theme_classic() +
+  theme(plot.title = element_text(size = 18))
+
+
+# Distribucuón del salario mensual
+ggplot(datos, aes(salario_mensual)) +
+  geom_histogram(color = "#000000", fill = "#0099F8") +
+  geom_vline(xintercept = median(datos$salario_mensual, na.rm = TRUE), linetype = "dashed", color = "red") +
+  geom_vline(xintercept = mean(datos$salario_mensual, na.rm = TRUE), linetype = "dashed", color = "blue") +  
+  ggtitle(" Ingreso mensual") +
+  theme_classic() +
+  theme(plot.title = element_text(size = 18))
+
+# Dado que la distribución del ingreso mensual tiene una cola larga a la derecha
+# usamos la mediana para imputar
+datos <- datos  %>%
+  mutate(salario_mensual = ifelse(is.na(salario_mensual) == TRUE, median(datos$salario_mensual, na.rm = TRUE) , salario_mensual))
+
+# Vemos ahora como quedo la base
+vis_dat(datos)
+vis_miss(datos)
+
+ggplot(data = datos , mapping = aes(x = edad , y = salario_mensual)) +
+  geom_point(col = "red" , size = 0.5)
+
+# Limpieza de valores faltantes 
+
+# Eliminamos las observaciones que tienen valores faltantes en la variable salario mensual
+
+#datos <- datos %>% filter(!is.na(salario_mensual))
 
 # Tratamiento de valores atípicos
 
 # Tratamiento con winsorize
 
 datos$salario_mensual <- psych::winsor(datos$salario_mensual, trim = 0.01)
+
+# Logaritmo del Salario
+
 datos$log_salario_m <- log(datos$salario_mensual)
-
-# Estadísticas Descriptivas 
-
-# Variables de análisis
 
 # Estadísticas descriptivas
 
@@ -170,7 +265,8 @@ Tabla_descriptivas <- datos[c("mujer","edad", "ama_casa", "hijos_hogar",
                               "salario_mensual", "ingreso_total", 
                               "exp_trabajo_actual", "horas_trab_usual", 
                               "informal")]
-
+#vis_dat(Tabla_descriptivas)
+#vis_miss(Tabla_descriptivas)
 estadisticas_todos <- data.frame(sapply(Tabla_descriptivas, function(x) 
   c(mean = mean(x), sd = sd(x))))
 
@@ -228,12 +324,4 @@ grafico_2 <- ggplot(datos, aes(x = salario_mensual, fill = genero)) +
         axis.text.y = element_text(angle = 0, vjust = 0.5, hjust=1),
         legend.position = "top") 
 grafico_2
-
-## Guardar base de datos 
-
-saveRDS(datos, "stores/database.rds")
-
-                     
-##Fin del código ##git checkout -b 
-
-
+##Fin del código ##
