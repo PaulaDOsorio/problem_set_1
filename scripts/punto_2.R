@@ -236,4 +236,79 @@ saveRDS(datos, "stores/database.rds")
                      
 ##Fin del código ##git checkout -b 
 
+## Punto 4
+
+install.packages("boot")
+library(boot)
+
+# a. Wage gap -------------------------------------------------------------
+
+#log(w) = β1 + β2F emale + u 
+
+modelo_1 <- lm(log_salario_m ~ mujer, data = datos)
+
+std(modelo_com)
+
+# b. Equal Pay for Equal Work? --------------------------------------------
+
+# i. FWL
+
+modelo_com <- lm(log_salario_m ~ mujer + edad + edad_2 +
+                   secundaria + media + superior + informal, data = datos)
+
+residuales_X <- lm( mujer ~ edad + edad_2 + secundaria + media 
+                    + superior + informal, data = datos)
+
+modelo_par <- lm(log_salario_m ~  resid(residuales_X), data = datos)
+
+#2. FWL with bootstrap
+
+
+boot_fn <- function(data, indices) {
+  fit <- lm(log_salario_m ~ mujer + edad + edad_2 +
+              secundaria + media + superior + informal, data = data, subset = indices)
+  
+  residuales_fit <- lm( mujer ~ edad + edad_2 + secundaria + media 
+                      + superior + informal, data = datos, subset = indices)
+  
+  modelo_fit <- lm(log_salario_m ~  resid(residuales_X), data = datos, subset = indices)
+  
+    return(coef(modelo_fit)[2])
+}
+
+boot_fn(datos, 1:nrow(datos))
+
+boot_results <- boot(data = datos, statistic = boot_fn, R = 1000)
+
+
+# c. Plot -----------------------------------------------------------------
+  
+  edad_minima = min(datos$edad)
+  edad_máxima = max(datos$edad)
+  
+  salario_hombres <- predict(modelo_com, newdata = data.frame(mujer = 0, edad = seq(edad_minima, edad_máxima), 
+                                                              edad_2 = seq(edad_minima, edad_máxima)^2,
+                                                              secundaria = 0, media = 0, superior = 0,
+                                                              informal = 0), interval = "confidence")
+  
+  salario_mujeres <- predict(modelo_com, newdata = data.frame(mujer = 1, edad = seq(edad_minima, edad_máxima), 
+                                                              edad_2 = seq(edad_minima, edad_máxima)^2,
+                                                              secundaria = 0, media = 0, superior = 0,
+                                                              informal = 0), interval = "confidence")
+  
+  # Graficar los perfiles de salario en función de la edad para hombres y mujeres
+  plot(seq(edad_minima, edad_máxima), salario_hombres[, "fit"], type = "l", col = "blue", 
+       ylim = range(salario_hombres[, "fit"], salario_mujeres[, "fit"]),
+       xlab = "Edad", ylab = "Salario", main = "Perfil de Salario por Edad y Género")
+  lines(seq(edad_minima, edad_máxima), salario_mujeres[, "fit"], type = "l", col = "red")
+  legend("topright", legend = c("Hombres", "Mujeres"), col = c("blue", "red"), lty = 1)
+  
+  
+  # Encontrar las edades en las que el salario alcanza su máximo para hombres y mujeres
+  edad_max_salario_hombres <- seq(edad_minima, edad_máxima)[which.max(salario_hombres[, "fit"])]
+  edad_max_salario_mujeres <- seq(edad_minima, edad_máxima)[which.max(salario_mujeres[, "fit"])]
+  
+  # Imprimir las edades en las que el salario alcanza su máximo para hombres y mujeres
+  cat("Edad en la que el salario alcanza su máximo para hombres:", edad_max_salario_hombres, "\n")
+  cat("Edad en la que el salario alcanza su máximo para mujeres:", edad_max_salario_mujeres, "\n")
 
