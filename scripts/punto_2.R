@@ -1,13 +1,23 @@
-##############################
-# Punto 2
-##############################
+############################################
+########## Problem set 1            ########
+###### Big Data y Maching Learning #########
+###### Paula Osorio:  ############
+###### Sandra Gamarra: 202225782 ###########
+###### Erika M. Macías:  #########  
+###### Ingrith Sierra:   #########
+############################################
+
+################
+### Punto 2 ###
+###############
 
 
 # Cargar paquete necesarios -----------------------------
 # install.packages('pacman')
 require(pacman)
-p_load(tidyverse,rvest, Hmisc, lattice, survival, Formula, ggplot2, 
-       robustHD, psych, openxlsx, writexl, robotstxt, showtext)
+p_load(rio, skimr, visdat, corrplot, stargazer, tidyverse,rvest, 
+       Hmisc, lattice, survival, Formula, ggplot2, robustHD, psych, 
+       openxlsx, writexl, robotstxt, showtext)
 
 # Cargar datos ------------------------------------------
 
@@ -26,8 +36,57 @@ for (i in 1:10){
   datos <- bind_rows(datos,my_table)
 }
 
-# Limpieza de la base de datos
+# Inspeccionando los datos
+head(datos)
+skim (datos) %>% head()
 
+# Mirando ggplot de salario
+## + geometry
+ggplot(data = datos , mapping = aes(x = age , y = y_ingLab_m)) +
+  geom_point(col = "red" , size = 0.5)
+## by group
+ggplot(data = datos , 
+       mapping = aes(x = age , y = y_ingLab_m , group=as.factor(formal) , color=as.factor(formal))) +
+  geom_point()
+
+## density: income by sex
+g1 <- ggplot(data=datos) + 
+  geom_histogram(mapping = aes(x=y_ingLab_m , group=as.factor(sex) , fill=as.factor(sex)))
+g1
+g1 + scale_fill_manual(values = c("0"="red" , "1"="blue") , label = c("0"="Hombre" , "1"="Mujer") , name = "Sexo")
+
+## box_plot: estrato1 vs totalHoursWorked
+box_plot <- ggplot(data=datos , mapping = aes(as.factor(estrato1) , totalHoursWorked)) + 
+  geom_boxplot() 
+box_plot
+
+## add another geometry
+box_plot <- box_plot +
+  geom_point(aes(colour=as.factor(sex))) +
+  scale_color_manual(values = c("0"="red" , "1"="blue") , label = c("0"="Hombre" , "1"="Mujer") , name = "Sexo")
+box_plot
+
+# Limpieza de la base de datos
+# Ver variables con datos missing
+datos_miss <- skim(datos) %>% select( skim_variable, n_missing)
+
+Nobs= nrow(datos) 
+Nobs
+
+datos_miss<- datos_miss %>% mutate(p_missing= n_missing/Nobs)
+head(datos_miss)
+
+# Ordenar variables con mayor número de missing
+datos_miss <- datos_miss %>% arrange(-n_missing) ## or arrange(desc(n_missing))
+datos_miss<- datos_miss %>% filter(n_missing!= 0)
+#Visualizando la estructura de los missing
+ggplot(datos_miss, aes(x = reorder(skim_variable, +p_missing) , y =  p_missing)) +
+  geom_bar(stat = "identity", fill = "skyblue", color = "black") +
+  coord_flip() +
+  labs(title = "N Missing Per Variable", x = "Var Name", y = "Missings")+ 
+  theme(axis.text = element_text(size = 5)) 
+
+#Filtramos datos de interés
 # Trabajadores con Edad mayores de 18 años)
 
 datos <- datos[datos$age >= 18, ]
@@ -124,10 +183,6 @@ datos$cabecera <- ifelse(datos$clase == 1, 1, 0)
 
 datos <- rename(datos, c("horas_trab_usual" = "hoursWorkUsual"))
 
-# Logaritmo del Salario
-
-datos$log_salario_m <- log(datos$salario_mensual)
-
 # Ciudad
 
 datos <- rename(datos, c("ciudad" = "dominio"))
@@ -141,26 +196,66 @@ datos<- subset(datos, select = c("directorio", "secuencia_p", "orden",
                                  "media", "superior", "salario_mensual",
                                  "ingreso_total", "exp_trabajo_actual",
                                  "estrato", "cabecera", "horas_trab_usual",
-                                 "ocupacion", "log_salario_m", "informal",
+                                 "ocupacion", "informal",
                                  "ciudad"))
 
-# 2.c. Limpieza de valores faltantes 
+# Vemos datos faltantes de las variables seleccionadas
+vis_dat(datos)
+vis_miss(datos)
 
-# Eliminamos las observaciones que tienen valores faltantes en el las siguientes variables:
-# salario nominal mensual
+# create a dataset with all variables== 1 if missing
+db1 <- datos %>% mutate_all(~ifelse(!is.na(.), 1, 0))
+## drop  variables with not missing or  with all missing.
 
-datos <- datos %>% filter(!is.na(salario_mensual))
+db1 <-  datos %>%  select(which(apply(db1, 2, sd) > 0))
+
+M <- cor(db1)
+corrplot(M) 
+
+# Vemos la distribución de salario_mensual que es la variable con missing
+ggplot(datos, aes(salario_mensual)) +
+  geom_histogram(color = "#000000", fill = "#0099F8") +
+  ggtitle("Distribucion Salario Mensual") +
+  theme_classic() +
+  theme(plot.title = element_text(size = 18))
+
+
+# Distribucuón del salario mensual
+ggplot(datos, aes(salario_mensual)) +
+  geom_histogram(color = "#000000", fill = "#0099F8") +
+  geom_vline(xintercept = median(datos$salario_mensual, na.rm = TRUE), linetype = "dashed", color = "red") +
+  geom_vline(xintercept = mean(datos$salario_mensual, na.rm = TRUE), linetype = "dashed", color = "blue") +  
+  ggtitle(" Ingreso mensual") +
+  theme_classic() +
+  theme(plot.title = element_text(size = 18))
+
+# Dado que la distribución del ingreso mensual tiene una cola larga a la derecha
+# usamos la mediana para imputar
+datos <- datos  %>%
+  mutate(salario_mensual = ifelse(is.na(salario_mensual) == TRUE, median(datos$salario_mensual, na.rm = TRUE) , salario_mensual))
+
+# Vemos ahora como quedo la base
+vis_dat(datos)
+vis_miss(datos)
+
+ggplot(data = datos , mapping = aes(x = edad , y = salario_mensual)) +
+  geom_point(col = "red" , size = 0.5)
+
+# Limpieza de valores faltantes 
+
+# Eliminamos las observaciones que tienen valores faltantes en la variable salario mensual
+
+#datos <- datos %>% filter(!is.na(salario_mensual))
 
 # Tratamiento de valores atípicos
 
 # Tratamiento con winsorize
 
 datos$salario_mensual <- psych::winsor(datos$salario_mensual, trim = 0.01)
+
+# Logaritmo del Salario
+
 datos$log_salario_m <- log(datos$salario_mensual)
-
-# Estadísticas Descriptivas 
-
-# Variables de análisis
 
 # Estadísticas descriptivas
 
@@ -170,7 +265,8 @@ Tabla_descriptivas <- datos[c("mujer","edad", "ama_casa", "hijos_hogar",
                               "salario_mensual", "ingreso_total", 
                               "exp_trabajo_actual", "horas_trab_usual", 
                               "informal")]
-
+#vis_dat(Tabla_descriptivas)
+#vis_miss(Tabla_descriptivas)
 estadisticas_todos <- data.frame(sapply(Tabla_descriptivas, function(x) 
   c(mean = mean(x), sd = sd(x))))
 
@@ -233,129 +329,95 @@ grafico_2
 
 saveRDS(datos, "stores/database.rds")
 
+
                      
 ##Fin del código ##git checkout -b 
 
-## Punto 4
 
-install.packages(c("boot","stargazer", "caret"))
-library(boot)
-library(stargazer)
-library(caret)
+######################################
+#Punto 5a
 
-# a. Wage gap -------------------------------------------------------------
+#cargar paquetes necesarios
+p_load(rio, tidyverse,caret, gridExtra,skimr) 
 
-#log(w) = β1 + β2F emale + u 
+#establecer semilla para hacer replicable el proceso
+set.seed(10101)
 
-modelo_1 <- lm(log(salario_mensual) ~ mujer, data = datos)
+#crear variables no lineales para especificaciones más complejas
+datos$estrato_4 <- datos$estrato^4
+datos$exp_trabajo_actual_2 <- datos$exp_trabajo_actual^2
 
-modelo_2 <- lm(log(salario_mensual) ~ mujer + edad + edad_2 +
-                   secundaria + media + superior + informal, data = datos)
+#Dividir la muestra para que el 70% se utilice para entrenamiento y el 30% para pruebas
+inTrain <- createDataPartition(
+  y = datos$log_salario_m,  
+  p = .70, 
+  list = FALSE
+)
 
-# b. Equal Pay for Equal Work? --------------------------------------------
+training <- datos[ inTrain,]
+testing  <- datos[-inTrain,]
 
-# i. FWL
+#Punto 5b
 
-modelo_com <- lm(log(salario_mensual) ~ edad + edad_2 +
-                   secundaria + media + superior + informal, data = datos)
-fit_y <- resid(modelo_com)
+#Definir las especificaciones de los modelos a probar
+modelo_1 <- log_salario_m ~ edad + edad_2
+modelo_2 <- log_salario_m ~ mujer
+modelo_3 <- log_salario_m ~ mujer+ edad + edad_2 + secundaria + media + superior + informal
+modelo_4 <-log_salario_m ~ edad + edad_2 + estrato + busca_trabajo
+modelo_5 <-log_salario_m ~ superior + exp_trabajo_actual
+modelo_6 <-log_salario_m ~ mujer + edad + edad_2 + estrato_4 + busca_trabajo + superior 
+modelo_7 <-log_salario_m ~ mujer + edad + edad_2 + estrato_4 + busca_trabajo + superior + exp_trabajo_actual_2 + hijos_hogar + cabecera
+modelo_8 <-log_salario_m ~ mujer + edad + edad_2 + estrato_4 + busca_trabajo + superior + exp_trabajo_actual_2 + hijos_hogar + cabecera + secundaria + media + informal
 
-fit_X <- lm( mujer ~ edad + edad_2 + secundaria + media 
-                    + superior + informal, data = datos)
+modelos <- c(modelo_1,modelo_2,modelo_3,modelo_4,modelo_5,modelo_6,modelo_7,modelo_8)
 
-
-modelo_par <- lm(fit_y ~  resid(fit_X), data = datos)
-
-#2. FWL with bootstrap
-
-train <- trainControl(method = "boot", number = 1000)
-
-boot_fn <- function(data, indices) {
-  fit <- lm(log(salario_mensual) ~ edad + edad_2 +
-              secundaria + media + superior + informal, data = data, subset = indices)
+#función que calcula las predicciónes de y para los modelos y el RMSE
+  t_RMSE <- function(modelos,training, testing, var_y){
+    resultados <- tibble()
+    for (i in 1:length(modelos)) {
+      m <- lm(modelos[[i]], data=training) #saca los betas del modelo con los datos de entrenamiento
+      p <- predict(m, testing) #calcula la variable dependiente con el modelo para los x de prueba
+      score<- RMSE(p, testing[[var_y]]) #calcula el RMSE del modelo estimado
+      resultados <- bind_rows(resultados, tibble(modelo=paste0("modelo",i), RMSE=score)) #llenado de tabla con los resultados 
+    }
+    return(resultados) #devuelve el resultado de la función
+  }
   
-  residuales_X <- lm( mujer ~ edad + edad_2 + secundaria + media 
-                      + superior + informal, data = datos, subset = indices)
+ #calculo de los RMSE de los modelos especificados
+  tabla <- t_RMSE(modelos,training, testing, "log_salario_m") #correr función con los inputs específicos
   
-  modelo_fit <- lm(resid(fit) ~  resid(residuales_X), data = datos, subset = indices)
+ #computar los errores de la predicción para el modelo con el error más bajo
+  modelo_error_bajo <- lm(modelo_8,data = training)
+  testing$predictions <- predict(modelo_error_bajo, testing)
+  errores <- with(testing,(log_salario_m-predictions)^2)
+  errores1 <- with(testing,(log_salario_m-predictions))
   
-    return(coef(modelo_fit)[2])
-}
-
-boot_fn(datos, 1:nrow(datos))
-
-boot_results <- boot(data = datos, statistic = boot_fn, R = 1000)
-
-modelo_list <- list(modelo_1, modelo_2, modelo_par)
-
-stargazer(modelo_list) #default, latex
-
-x# c. Plot -----------------------------------------------------------------
-modelo_brecha <- lm(log(salario_mensual) ~ mujer + edad + edad_2 + secundaria + 
-                      media + superior + informal + mujer*edad, data = datos)  
-
-  edad_minima = min(datos$edad)
-  edad_máxima = max(datos$edad)
+ #graficar la distribución de los errores del mejor modelo (en valor absoluto y sin valor absoluto)
+  ggplot(testing, aes(x = errores )) +
+    geom_histogram(bins = 50, fill = "darkblue") +
+    labs(x = "error de predicción", y = "Cantidad") +
+    theme_bw()
   
-  salario_hombres <- predict(modelo_brecha, newdata = data.frame(mujer = 0, edad = seq(edad_minima, edad_máxima), 
-                                                              edad_2 = seq(edad_minima, edad_máxima)^2,
-                                                              secundaria = 0, media = 0, superior = 0,
-                                                              informal = 0), interval = "confidence")
+  ggplot(testing, aes(x = errores1 )) +
+    geom_histogram(bins = 50, fill = "darkblue") +
+    labs(x = "error de predicción", y = "Cantidad") +
+    theme_bw()
   
-  salario_mujeres <- predict(modelo_brecha, newdata = data.frame(mujer = 1, edad = seq(edad_minima, edad_máxima), 
-                                                              edad_2 = seq(edad_minima, edad_máxima)^2,
-                                                              secundaria = 0, media = 0, superior = 0,
-                                                              informal = 0), interval = "confidence")
+  #graficar la dispersión entre errores y variable Y
+  plot(errores, testing$log_salario_m, main = "Scatter Plot", xlab = "error de predicción", ylab = "log salario test", pch = 16, col = "blue")
+  plot(errores1, testing$log_salario_m, main = "Scatter Plot", xlab = "error de predicción", ylab = "log salario test", pch = 16, col = "blue")
   
-  # Graficar los perfiles de salario en función de la edad para hombres y mujeres
-  plot(seq(edad_minima, edad_máxima), salario_hombres[, "fit"], type = "l", col = "#9A32CD", 
-       ylim = range(salario_hombres[, "fit"], salario_mujeres[, "fit"]),
-       xlab = "Edad", ylab = "Salario", main = "Perfil de Salario por Edad y Género") +
-  lines(seq(edad_minima, edad_máxima), salario_mujeres[, "fit"], type = "l", col = "#CD2626") 
-  legend("topright", legend = c("Hombres", "Mujeres"), col = c("#9A32CD", "#CD2626"), lty = 1)
+  #Punto 5d
+  ctrl <- trainControl(method = "LOOCV") #establece el método de cross-validation a utilizar
   
+  #se utiliza el método solo con los 2 modelos con los errores predictivos más bajos
+  #para el modelo 7
+  cross_validation_1 <- train(modelo_7,data = datos,method = 'lm',trControl= ctrl)
+  score1<-RMSE(cross_validation_1$pred$pred, datos$log_salario_m) #se guarda el resultado de error de predicción
   
-  # Encontrar las edades en las que el salario alcanza su máximo para hombres y mujeres
-  edad_max_salario_hombres <- seq(edad_minima, edad_máxima)[which.max(salario_hombres[, "fit"])]
-  edad_max_salario_mujeres <- seq(edad_minima, edad_máxima)[which.max(salario_mujeres[, "fit"])]
+  #para el modelo 8
+  cross_validation_2 <- train(modelo_8,data = datos,method = 'lm',trControl= ctrl)
+  score2<-RMSE(cross_validation_2$pred$pred, datos$log_salario_m) #se guarda el resultado de error de predicción
   
-  # Imprimir las edades en las que el salario alcanza su máximo para hombres y mujeres
-  cat("Edad en la que el salario alcanza su máximo para hombres:", edad_max_salario_hombres, "\n")
-  cat("Edad en la que el salario alcanza su máximo para mujeres:", edad_max_salario_mujeres, "\n")
-
-  
-  # Coeficientes y errores estándar
-  coeficientes <- coef(modelo_brecha)
-  errores <- summary(modelo_brecha)$coefficients[, "Std. Error"]
-  
-
-  # Calcular la "edad pico" y sus errores estándar por género
-  peak_age_male <- -coeficientes["edad"] / (2 * (coeficientes["edad_2"]))
-  peak_age_female <- -(coeficientes["edad"]+coeficientes["mujer:edad"]) / (2 * (coeficientes["edad_2"]))
-  
-  # Calcular los errores estándar para la "edad pico" por género
-  se_peak_age_male <- sqrt((errores["edad"] / (2 * coeficientes["edad_2"]))^2 + ((coeficientes["edad"] / (2 * coeficientes["edad_2"]^2)) * errores["edad_2"])^2)
-  se_peak_age_female <- sqrt(((errores["edad"] + errores["mujer:edad"]) / (2 * coeficientes["edad_2"]))^2 + (((coeficientes["edad"] + coeficientes["mujer:edad"]) / (2 * coeficientes["edad_2"]^2)) * errores["edad_2"])^2)
-  
-  #Calcular intervalo de confianza
-  ci_female = cat(peak_age_female-1.96*se_peak_age_female,peak_age_female+1.96*se_peak_age_female)
-  ci_male = cat(peak_age_male-1.96*se_peak_age_male,peak_age_male+1.96*se_peak_age_male)
-  
-  
-  salario_mujer <- as.numeric(coeficientes["(Intercept)"]) + as.numeric(coeficientes["mujer"]) + 
-    as.numeric(coeficientes["edad"])*as.numeric(peak_age_female) +
-    as.numeric(coeficientes["edad_2"])*(as.numeric(peak_age_female)^2)+as.numeric(coeficientes["mujer:edad"])*as.numeric(peak_age_female)
-  
-  salario_hombre <- as.numeric(coeficientes["(Intercept)"]) +  
-    as.numeric(coeficientes["edad"])*as.numeric(peak_age_female) +
-    as.numeric(coeficientes["edad_2"])*(as.numeric(peak_age_female)^2)
-  
-  
-  # Contraste de las edades pico utilizando pruebas estadísticas relevantes
-  # Por ejemplo, prueba de hipótesis para comparar las edades pico entre géneros
-  t_statistic <- (salario_hombre - salario_mujer) / sqrt(salario_hombre^2 + salario_mujer^2)
-  degrees_of_freedom <- min(length(datos$mujer[datos$mujer == 1]), length(datos$mujer[datos$mujer == 0])) - 1
-  p_value <- 2 * pt(abs(t_statistic), df = degrees_of_freedom)
-  
-  cat("T-Statistic:", t_statistic, "\n")
-   cat("P-Value:", p_value, "\n")
+  #comparar el error del testeo con la validación LOOCV
+  comparativo<- data.frame( Model= c(7, 8),RMSE_vsa= c(as.numeric(tabla[3,2]), as.numeric(tabla[8,2])),RMSE_loocv= c(score1, score2))
