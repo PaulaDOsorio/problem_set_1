@@ -25,14 +25,19 @@ require(pacman)
 library(bootstrap)
 p_load("boot")
 
-u_err_est<-function(data,index){
-  coef(lm(log_salario_m~edad + edad_2, data = datos, subset = index)) 
+salariof<-function(data,index){
+  coef(lm(log_salario_m ~ edad + edad_2 ,data = datos, subset = index))[2]
 }
 
-u_err_est(datos,1:nrow(datos))
+salariof(datos,1:nrow(datos))
 
-bootstrap <- boot(datos_t, u_err_est, R = 1000)
+bootstrap <- boot(datos, salariof, R = 1000)
 coef_bootstrap <- bootstrap$t0
 error_estandar <- apply(bootstrap$t,2,sd)
 
+set.seed(123)
+#call the boot function
+boot(datos, salariof, R = 1000)
 
+conf_int <- quantile(salariof, c(0.025, 0.975))
+print(conf_int)
