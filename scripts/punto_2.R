@@ -389,15 +389,22 @@ modelos <- c(modelo_1,modelo_2,modelo_3,modelo_4,modelo_5,modelo_6,modelo_7,mode
   modelo_error_bajo <- lm(modelo_8,data = training)
   testing$predictions <- predict(modelo_error_bajo, testing)
   errores <- with(testing,(log_salario_m-predictions)^2)
+  errores1 <- with(testing,(log_salario_m-predictions))
   
- #graficar la distribución de los errores del mejor modelo
+ #graficar la distribución de los errores del mejor modelo (en valor absoluto y sin valor absoluto)
   ggplot(testing, aes(x = errores )) +
+    geom_histogram(bins = 50, fill = "darkblue") +
+    labs(x = "error de predicción", y = "Cantidad") +
+    theme_bw()
+  
+  ggplot(testing, aes(x = errores1 )) +
     geom_histogram(bins = 50, fill = "darkblue") +
     labs(x = "error de predicción", y = "Cantidad") +
     theme_bw()
   
   #graficar la dispersión entre errores y variable Y
   plot(errores, testing$log_salario_m, main = "Scatter Plot", xlab = "error de predicción", ylab = "log salario test", pch = 16, col = "blue")
+  plot(errores1, testing$log_salario_m, main = "Scatter Plot", xlab = "error de predicción", ylab = "log salario test", pch = 16, col = "blue")
   
   #Punto 5d
   ctrl <- trainControl(method = "LOOCV") #establece el método de cross-validation a utilizar
