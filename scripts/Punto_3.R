@@ -13,8 +13,21 @@ stargazer(regresion1,type="text", align = TRUE,
           out = "C:/Users/USUARIO/Documents/GitHub/problem_set_1/views/regresion1.tex") 
 summary(regresion1)
 
+library(stargazer)
+stargazer(regresion1)
 str(regresion1)
 regresion1$coefficients
+
+residuos <- residuals(regresion1)
+hist(residuos, breaks = 20, col = "lightblue", main = "Histograma de Residuos")
+curve(dnorm(x, mean = mean(residuos), sd = sd(residuos)), add = TRUE, col = "red")
+
+library(lmtest)
+library(zoo)
+ramsey.reset(regresion1)
+
+resettest(regresion1, power = 2)
+bptest(regresion1)
 
 library(readxl)
 datos_t <- read_excel("C:/Users/USUARIO/Documents/GitHub/problem_set_1/views/db_organizada.xlsx")
@@ -39,5 +52,8 @@ set.seed(123)
 #call the boot function
 boot(datos, salariof, R = 1000)
 
+quantile(salariof, c(0.025, 0.975))
 conf_int <- quantile(salariof, c(0.025, 0.975))
-print(conf_int)
+class(salariof)
+
+
