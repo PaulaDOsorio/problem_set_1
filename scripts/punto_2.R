@@ -238,8 +238,9 @@ saveRDS(datos, "stores/database.rds")
 
 ## Punto 4
 
-install.packages("boot")
+install.packages(c("boot","stargazer"))
 library(boot)
+library(stargazer)
 
 # a. Wage gap -------------------------------------------------------------
 
@@ -247,19 +248,22 @@ library(boot)
 
 modelo_1 <- lm(log_salario_m ~ mujer, data = datos)
 
-std(modelo_com)
+modelo_2 <- lm(log_salario_m ~ mujer + edad + edad_2 +
+                   secundaria + media + superior + informal, data = datos)
 
 # b. Equal Pay for Equal Work? --------------------------------------------
 
 # i. FWL
 
-modelo_com <- lm(log_salario_m ~ mujer + edad + edad_2 +
+modelo_com <- lm(log_salario_m ~ edad + edad_2 +
                    secundaria + media + superior + informal, data = datos)
+fit_y <- resid(modelo_com)
 
-residuales_X <- lm( mujer ~ edad + edad_2 + secundaria + media 
+fit_X <- lm( mujer ~ edad + edad_2 + secundaria + media 
                     + superior + informal, data = datos)
 
-modelo_par <- lm(log_salario_m ~  resid(residuales_X), data = datos)
+
+modelo_par <- lm(fit_y ~  resid(fit_X), data = datos)
 
 #2. FWL with bootstrap
 
@@ -280,6 +284,9 @@ boot_fn(datos, 1:nrow(datos))
 
 boot_results <- boot(data = datos, statistic = boot_fn, R = 1000)
 
+modelo_list <- list(modelo_1, modelo_2, modelo_par)
+
+stargazer(modelo_list) #default, latex
 
 # c. Plot -----------------------------------------------------------------
   
