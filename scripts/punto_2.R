@@ -236,4 +236,20 @@ saveRDS(datos, "stores/database.rds")
                      
 ##Fin del código ##git checkout -b 
 
+## Perfil salario-edad
+
+p_load("tidyverse","stargazer")
+require("pacman")
+p_load(rio, tidyverse,skimr,gridExtra,corrplot,stargazer,MASS)
+
+features <- c("edad", "salario mensual")
+
+# Crear dataframe
+
+data <- data.frame(
+)
+
+##Regresion
+
+reg1 <- lm(log_salario_m ~ edad + edad2,  data = datos )
 
