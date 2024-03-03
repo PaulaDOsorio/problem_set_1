@@ -238,9 +238,10 @@ saveRDS(datos, "stores/database.rds")
 
 ## Punto 4
 
-install.packages(c("boot","stargazer"))
+install.packages(c("boot","stargazer", "caret"))
 library(boot)
 library(stargazer)
+library(caret)
 
 # a. Wage gap -------------------------------------------------------------
 
@@ -267,15 +268,16 @@ modelo_par <- lm(fit_y ~  resid(fit_X), data = datos)
 
 #2. FWL with bootstrap
 
+train <- trainControl(method = "boot", number = 1000)
 
 boot_fn <- function(data, indices) {
-  fit <- lm(log_salario_m ~ mujer + edad + edad_2 +
+  fit <- lm(log_salario_m ~ edad + edad_2 +
               secundaria + media + superior + informal, data = data, subset = indices)
   
   residuales_fit <- lm( mujer ~ edad + edad_2 + secundaria + media 
                       + superior + informal, data = datos, subset = indices)
   
-  modelo_fit <- lm(log_salario_m ~  resid(residuales_X), data = datos, subset = indices)
+  modelo_fit <- lm(resid(fit) ~  resid(residuales_X), data = datos, subset = indices)
   
     return(coef(modelo_fit)[2])
 }
