@@ -1,6 +1,6 @@
 ############################################
 ########## Problem set 1            ########
-###### Big Data y Maching Learning #########
+###### Big Data y Machine Learning #########
 ###### Paula Osorio:  ############
 ###### Sandra Gamarra: 202225782 ###########
 ###### Erika M. Macías:  #########  
@@ -324,4 +324,11 @@ grafico_2 <- ggplot(datos, aes(x = salario_mensual, fill = genero)) +
         axis.text.y = element_text(angle = 0, vjust = 0.5, hjust=1),
         legend.position = "top") 
 grafico_2
+
+db_organizada <- "db_organizada.xlsx"
+
+# Exportando el dataframe a un archivo Excel
+write.xlsx(datos, file = "C:/Users/sandr/Documents/GitHub/BIG DATA/Taller1_problem_set_1/views/db_organizada.xlsx", row.names = FALSE)
+
+
 ##Fin del código ##
