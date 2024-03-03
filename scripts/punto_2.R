@@ -247,16 +247,16 @@ library(caret)
 
 #log(w) = β1 + β2F emale + u 
 
-modelo_1 <- lm(log_salario_m ~ mujer, data = datos)
+modelo_1 <- lm(log(salario_mensual) ~ mujer, data = datos)
 
-modelo_2 <- lm(log_salario_m ~ mujer + edad + edad_2 +
+modelo_2 <- lm(log(salario_mensual) ~ mujer + edad + edad_2 +
                    secundaria + media + superior + informal, data = datos)
 
 # b. Equal Pay for Equal Work? --------------------------------------------
 
 # i. FWL
 
-modelo_com <- lm(log_salario_m ~ edad + edad_2 +
+modelo_com <- lm(log(salario_mensual) ~ edad + edad_2 +
                    secundaria + media + superior + informal, data = datos)
 fit_y <- resid(modelo_com)
 
@@ -271,10 +271,10 @@ modelo_par <- lm(fit_y ~  resid(fit_X), data = datos)
 train <- trainControl(method = "boot", number = 1000)
 
 boot_fn <- function(data, indices) {
-  fit <- lm(log_salario_m ~ edad + edad_2 +
+  fit <- lm(log(salario_mensual) ~ edad + edad_2 +
               secundaria + media + superior + informal, data = data, subset = indices)
   
-  residuales_fit <- lm( mujer ~ edad + edad_2 + secundaria + media 
+  residuales_X <- lm( mujer ~ edad + edad_2 + secundaria + media 
                       + superior + informal, data = datos, subset = indices)
   
   modelo_fit <- lm(resid(fit) ~  resid(residuales_X), data = datos, subset = indices)
@@ -290,8 +290,8 @@ modelo_list <- list(modelo_1, modelo_2, modelo_par)
 
 stargazer(modelo_list) #default, latex
 
-# c. Plot -----------------------------------------------------------------
-modelo_brecha <- lm(log_salario_m ~ mujer + edad + edad_2 + secundaria + 
+x# c. Plot -----------------------------------------------------------------
+modelo_brecha <- lm(log(salario_mensual) ~ mujer + edad + edad_2 + secundaria + 
                       media + superior + informal + mujer*edad, data = datos)  
 
   edad_minima = min(datos$edad)
@@ -337,9 +337,23 @@ modelo_brecha <- lm(log_salario_m ~ mujer + edad + edad_2 + secundaria +
   se_peak_age_male <- sqrt((errores["edad"] / (2 * coeficientes["edad_2"]))^2 + ((coeficientes["edad"] / (2 * coeficientes["edad_2"]^2)) * errores["edad_2"])^2)
   se_peak_age_female <- sqrt(((errores["edad"] + errores["mujer:edad"]) / (2 * coeficientes["edad_2"]))^2 + (((coeficientes["edad"] + coeficientes["mujer:edad"]) / (2 * coeficientes["edad_2"]^2)) * errores["edad_2"])^2)
   
+  #Calcular intervalo de confianza
+  ci_female = cat(peak_age_female-1.96*se_peak_age_female,peak_age_female+1.96*se_peak_age_female)
+  ci_male = cat(peak_age_male-1.96*se_peak_age_male,peak_age_male+1.96*se_peak_age_male)
+  
+  
+  salario_mujer <- as.numeric(coeficientes["(Intercept)"]) + as.numeric(coeficientes["mujer"]) + 
+    as.numeric(coeficientes["edad"])*as.numeric(peak_age_female) +
+    as.numeric(coeficientes["edad_2"])*(as.numeric(peak_age_female)^2)+as.numeric(coeficientes["mujer:edad"])*as.numeric(peak_age_female)
+  
+  salario_hombre <- as.numeric(coeficientes["(Intercept)"]) +  
+    as.numeric(coeficientes["edad"])*as.numeric(peak_age_female) +
+    as.numeric(coeficientes["edad_2"])*(as.numeric(peak_age_female)^2)
+  
+  
   # Contraste de las edades pico utilizando pruebas estadísticas relevantes
   # Por ejemplo, prueba de hipótesis para comparar las edades pico entre géneros
-  t_statistic <- (peak_age_male - peak_age_female) / sqrt(se_peak_age_male^2 + se_peak_age_female^2)
+  t_statistic <- (salario_hombre - salario_mujer) / sqrt(salario_hombre^2 + salario_mujer^2)
   degrees_of_freedom <- min(length(datos$mujer[datos$mujer == 1]), length(datos$mujer[datos$mujer == 0])) - 1
   p_value <- 2 * pt(abs(t_statistic), df = degrees_of_freedom)
   
