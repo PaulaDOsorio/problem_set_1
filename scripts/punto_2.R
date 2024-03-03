@@ -291,26 +291,28 @@ modelo_list <- list(modelo_1, modelo_2, modelo_par)
 stargazer(modelo_list) #default, latex
 
 # c. Plot -----------------------------------------------------------------
-  
+modelo_brecha <- lm(log_salario_m ~ mujer + edad + edad_2 + secundaria + 
+                      media + superior + informal + mujer*edad, data = datos)  
+
   edad_minima = min(datos$edad)
   edad_máxima = max(datos$edad)
   
-  salario_hombres <- predict(modelo_com, newdata = data.frame(mujer = 0, edad = seq(edad_minima, edad_máxima), 
+  salario_hombres <- predict(modelo_brecha, newdata = data.frame(mujer = 0, edad = seq(edad_minima, edad_máxima), 
                                                               edad_2 = seq(edad_minima, edad_máxima)^2,
                                                               secundaria = 0, media = 0, superior = 0,
                                                               informal = 0), interval = "confidence")
   
-  salario_mujeres <- predict(modelo_com, newdata = data.frame(mujer = 1, edad = seq(edad_minima, edad_máxima), 
+  salario_mujeres <- predict(modelo_brecha, newdata = data.frame(mujer = 1, edad = seq(edad_minima, edad_máxima), 
                                                               edad_2 = seq(edad_minima, edad_máxima)^2,
                                                               secundaria = 0, media = 0, superior = 0,
                                                               informal = 0), interval = "confidence")
   
   # Graficar los perfiles de salario en función de la edad para hombres y mujeres
-  plot(seq(edad_minima, edad_máxima), salario_hombres[, "fit"], type = "l", col = "blue", 
+  plot(seq(edad_minima, edad_máxima), salario_hombres[, "fit"], type = "l", col = "#9A32CD", 
        ylim = range(salario_hombres[, "fit"], salario_mujeres[, "fit"]),
-       xlab = "Edad", ylab = "Salario", main = "Perfil de Salario por Edad y Género")
-  lines(seq(edad_minima, edad_máxima), salario_mujeres[, "fit"], type = "l", col = "red")
-  legend("topright", legend = c("Hombres", "Mujeres"), col = c("blue", "red"), lty = 1)
+       xlab = "Edad", ylab = "Salario", main = "Perfil de Salario por Edad y Género") +
+  lines(seq(edad_minima, edad_máxima), salario_mujeres[, "fit"], type = "l", col = "#CD2626") 
+  legend("topright", legend = c("Hombres", "Mujeres"), col = c("#9A32CD", "#CD2626"), lty = 1)
   
   
   # Encontrar las edades en las que el salario alcanza su máximo para hombres y mujeres
@@ -321,3 +323,25 @@ stargazer(modelo_list) #default, latex
   cat("Edad en la que el salario alcanza su máximo para hombres:", edad_max_salario_hombres, "\n")
   cat("Edad en la que el salario alcanza su máximo para mujeres:", edad_max_salario_mujeres, "\n")
 
+  
+  # Coeficientes y errores estándar
+  coeficientes <- coef(modelo_brecha)
+  errores <- summary(modelo_brecha)$coefficients[, "Std. Error"]
+  
+
+  # Calcular la "edad pico" y sus errores estándar por género
+  peak_age_male <- -coeficientes["edad"] / (2 * (coeficientes["edad_2"]))
+  peak_age_female <- -(coeficientes["edad"]+coeficientes["mujer:edad"]) / (2 * (coeficientes["edad_2"]))
+  
+  # Calcular los errores estándar para la "edad pico" por género
+  se_peak_age_male <- sqrt((errores["edad"] / (2 * coeficientes["edad_2"]))^2 + ((coeficientes["edad"] / (2 * coeficientes["edad_2"]^2)) * errores["edad_2"])^2)
+  se_peak_age_female <- sqrt(((errores["edad"] + errores["mujer:edad"]) / (2 * coeficientes["edad_2"]))^2 + (((coeficientes["edad"] + coeficientes["mujer:edad"]) / (2 * coeficientes["edad_2"]^2)) * errores["edad_2"])^2)
+  
+  # Contraste de las edades pico utilizando pruebas estadísticas relevantes
+  # Por ejemplo, prueba de hipótesis para comparar las edades pico entre géneros
+  t_statistic <- (peak_age_male - peak_age_female) / sqrt(se_peak_age_male^2 + se_peak_age_female^2)
+  degrees_of_freedom <- min(length(datos$mujer[datos$mujer == 1]), length(datos$mujer[datos$mujer == 0])) - 1
+  p_value <- 2 * pt(abs(t_statistic), df = degrees_of_freedom)
+  
+  cat("T-Statistic:", t_statistic, "\n")
+   cat("P-Value:", p_value, "\n")
