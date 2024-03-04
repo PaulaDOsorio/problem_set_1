@@ -1,10 +1,10 @@
 ############################################
 ########## Problem set 1            ########
 ###### Big Data y Maching Learning #########
-###### Paula Osorio:  ############
+###### Paula Osorio:201327186   ############
 ###### Sandra Gamarra: 202225782 ###########
-###### Erika M. Macías:  #########  
-###### Ingrith Sierra:   #########
+###### Erika M. Macías:  Educacion continua#  
+###### Ingrith Sierra: 201720654    ########
 ############################################
 
 ################
@@ -325,13 +325,11 @@ grafico_2 <- ggplot(datos, aes(x = salario_mensual, fill = genero)) +
         legend.position = "top") 
 grafico_2
 
-## Guardar base de datos 
+# Guardar DB
+db_organizada <- "db_organizada.xlsx"
 
-saveRDS(datos, "stores/database.rds")
-
-
-                     
-##Fin del código ##git checkout -b 
+# Exportando el dataframe a un archivo Excel
+write.xlsx(datos, file = "C:/Users/sandr/Documents/GitHub/BIG DATA/Taller1_problem_set_1/views/db_organizada.xlsx", row.names = FALSE)
 
 
 ######################################
