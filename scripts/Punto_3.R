@@ -71,11 +71,31 @@ ggplot(data = datos, mapping = aes (x= edad, y = log_salario_m)) +
   scale_color_manual(values = "red") +
   labs(title = "Gráfico pefil edad-ganancias")
 
-punto_max <- datos[which.max(datos$log_salario_m), ]
+bootstrap <- boot(datos, salariof, R = 1000)
+coef_boot <- bootstrap$t0
+error_estandar <- apply(bootstrap$t,2,sd)
 
-ggplot(data = datos, aes(x = edad, y = log_salario_m)) +
-  geom_point() +
-  geom_point(data = punto_max, aes(color = "Punto Máximo"), size = 3) +
-  scale_color_manual(values = "purple") +
-  labs(title = "Perfil edad - salario")
-errores_estandar <- summary(regresion1)$coefficients[, "Std. Error"]
+# Creamos df con las variables x y las y
+coef_boot <- bootstrap$t0
+x <- seq(18, 90, length.out = 100)
+y <- coef_boot[1] + coef_boot[2] * x + coef_boot[3] * x^2
+y_i <- (coef_boot[1]-1.96*error_estandar[1]) + (coef_boot[2]-1.96*error_estandar[2])*x + 
+  (coef_boot[3]-1.96*error_estandar[3])*x^2
+y_s <- (coef_boot[1]+1.96*error_estandar[1]) + (coef_boot[2]+1.96*error_estandar[2])*x + 
+  (coef_boot[3]+1.96*error_estandar[3])*x^2
+
+df <- data.frame(x, y, y_i, y_s)
+
+# Graficar la función
+
+grafico_3 <- ggplot(df, aes(x = x, y = y)) +
+  geom_line(aes(color = "Estimado"), size = 1) +
+  geom_line(aes(x = x, y = y_i, color = "Límite inferior"), linetype = "dotted", size = 1) +
+  geom_line(aes(x = x, y = y_s, color = "Límite superior"), linetype = "dotted", size = 1) +
+  scale_color_manual(name = "", values = c("Estimado" = "black", "Límite inferior" = "blue", "Límite superior" = "red")) +
+  labs(x = "Edad", y = "Log(Salario)") +
+  theme_classic() +
+  scale_x_continuous(limits = c(18, 90)) +
+  geom_vline(xintercept = 43, linetype = "dotted") +
+  theme(legend.position = "bottom")
+grafico_3
