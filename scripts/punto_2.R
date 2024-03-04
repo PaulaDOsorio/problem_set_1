@@ -334,6 +334,7 @@ write.xlsx(datos, file = "C:/Users/sandr/Documents/GitHub/BIG DATA/Taller1_probl
 
 ######################################
 #Punto 5a
+######################################
 
 #cargar paquetes necesarios
 p_load(rio, tidyverse,caret, gridExtra,skimr) 
