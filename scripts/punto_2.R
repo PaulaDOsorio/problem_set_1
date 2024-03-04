@@ -43,17 +43,17 @@ skim (datos) %>% head()
 # Mirando ggplot de salario
 ## + geometry
 ggplot(data = datos , mapping = aes(x = age , y = y_ingLab_m)) +
-  geom_point(col = "red" , size = 0.5)
-## by group
+  geom_point(col = "#FF007F" , size = 0.5)
+## por grupo 
 ggplot(data = datos , 
        mapping = aes(x = age , y = y_ingLab_m , group=as.factor(formal) , color=as.factor(formal))) +
   geom_point()
 
-## density: income by sex
+## density: salario mensual por sexo
 g1 <- ggplot(data=datos) + 
   geom_histogram(mapping = aes(x=y_ingLab_m , group=as.factor(sex) , fill=as.factor(sex)))
 g1
-g1 + scale_fill_manual(values = c("0"="red" , "1"="blue") , label = c("0"="Hombre" , "1"="Mujer") , name = "Sexo")
+g1 + scale_fill_manual(values = c("0"="#FF007F" , "1"="blue") , label = c("0"="Hombre" , "1"="Mujer") , name = "Sexo")
 
 ## box_plot: estrato1 vs totalHoursWorked
 box_plot <- ggplot(data=datos , mapping = aes(as.factor(estrato1) , totalHoursWorked)) + 
@@ -214,18 +214,18 @@ corrplot(M)
 
 # Vemos la distribución de salario_mensual que es la variable con missing
 ggplot(datos, aes(salario_mensual)) +
-  geom_histogram(color = "#000000", fill = "#0099F8") +
-  ggtitle("Distribucion Salario Mensual") +
+  geom_histogram(color = "gray", fill = "#0099F8") +
+  ggtitle("Distribución Salario Mensual") +
   theme_classic() +
   theme(plot.title = element_text(size = 18))
 
 
 # Distribucuón del salario mensual
 ggplot(datos, aes(salario_mensual)) +
-  geom_histogram(color = "#000000", fill = "#0099F8") +
+  geom_histogram(color = "gray", fill = "#0099F8") +
   geom_vline(xintercept = median(datos$salario_mensual, na.rm = TRUE), linetype = "dashed", color = "red") +
   geom_vline(xintercept = mean(datos$salario_mensual, na.rm = TRUE), linetype = "dashed", color = "blue") +  
-  ggtitle(" Ingreso mensual") +
+  #ggtitle(" Ingreso mensual") +
   theme_classic() +
   theme(plot.title = element_text(size = 18))
 
@@ -270,7 +270,7 @@ Tabla_descriptivas <- datos[c("mujer","edad", "ama_casa", "hijos_hogar",
 estadisticas_todos <- data.frame(sapply(Tabla_descriptivas, function(x) 
   c(mean = mean(x), sd = sd(x))))
 
-write.xlsx(estadisticas_todos, file = "C:/Users/sandr/Documents/GitHub/BIG DATA/problem_set_1/views/Estadisticas_descriptivas.xlsx")
+write.xlsx(estadisticas_todos, file = "C:/Users/sandr/Documents/GitHub/BIG DATA/Taller1_problem_set_1/views/Estadisticas_descriptivas.xlsx")
 
 # Mujeres
 
@@ -279,7 +279,7 @@ db_Mujeres <- Tabla_descriptivas[Tabla_descriptivas$mujer == 1, ]
 estadisticas_mujer <- data.frame(sapply(db_Mujeres, function(x) 
   c(mean = mean(x), sd = sd(x))))
 
-write.xlsx(estadisticas_mujer, file = "C:/Users/sandr/Documents/GitHub/BIG DATA/problem_set_1/views/Estadisticas_Mujer.xlsx")
+write.xlsx(estadisticas_mujer, file = "C:/Users/sandr/Documents/GitHub/BIG DATA/Taller1_problem_set_1/views/Estadisticas_Mujer.xlsx")
 
 
 # Hombres
@@ -289,7 +289,7 @@ db_Hombres <- Tabla_descriptivas[Tabla_descriptivas$mujer == 0, ]
 estadisticas_hombre <- data.frame(sapply(db_Hombres, function(x) 
   c(mean = mean(x), sd = sd(x))))
 
-write.xlsx(estadisticas_hombre, file = "C:/Users/sandr/Documents/GitHub/BIG DATA/problem_set_1/views/Estadisticas_Hombre.xlsx")
+write.xlsx(estadisticas_hombre, file = "C:/Users/sandr/Documents/GitHub/BIG DATA/Taller1_problem_set_1/views/Estadisticas_Hombre.xlsx")
 
 
 
@@ -297,7 +297,7 @@ write.xlsx(estadisticas_hombre, file = "C:/Users/sandr/Documents/GitHub/BIG DATA
 
 grafico_1 <- ggplot(datos, aes(x = salario_mensual)) +
   geom_histogram(bins = 280, color = "blue", fill = "gray") +
-  labs(x = "Salario nominal mensual", y = "Frecuencia") +
+  labs(x = "Salario mensual", y = "Frecuencia") +
   theme_minimal() +
   scale_x_continuous(labels = function(x) paste0("$", format(x, big.mark = ",", scientific = FALSE)), limits = c(0, 13000000), expand = c(0,0), breaks = seq(0,13000000,1000000)) +
   scale_y_continuous(labels = function(x) format(x, big.mark = ","), limits = c(0, 1000), expand = c(0,0), breaks = seq(0,1000,100)) +
@@ -314,11 +314,11 @@ levels(datos$genero) = c("Hombre", "Mujer")
 
 grafico_2 <- ggplot(datos, aes(x = salario_mensual, fill = genero)) +
   geom_histogram(bins=120, color = "gray", alpha = 0.5) +
-  labs(x = "Salario nominal mensual", y = "Frecuencia") +
+  labs(x = "Salario mensual", y = "Frecuencia") +
   theme_minimal() +
   scale_x_continuous(labels = function(x) paste0("$", format(x, big.mark = ",", scientific = FALSE)), limits = c(0, 13000000), expand = c(0,0), breaks = seq(0,13000000,1000000)) +
   scale_y_continuous(labels = function(x) format(x, big.mark = ","), limits = c(0, 1000), expand = c(0,0), breaks = seq(0,1000,100)) +
-  scale_fill_manual(name = "Género", values = c("blue", "#FF007F"), labels = c("Hombre", "Mujer")) +
+  scale_fill_manual(name = "", values = c("#00008B", "#FF007F"), labels = c("Hombre", "Mujer")) +
   theme(text = element_text(size = 10),
         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
         axis.text.y = element_text(angle = 0, vjust = 0.5, hjust=1),
@@ -332,91 +332,4 @@ db_organizada <- "db_organizada.xlsx"
 write.xlsx(datos, file = "C:/Users/sandr/Documents/GitHub/BIG DATA/Taller1_problem_set_1/views/db_organizada.xlsx", row.names = FALSE)
 
 
-######################################
-#Punto 5a
-######################################
-
-#cargar paquetes necesarios
-p_load(rio, tidyverse,caret, gridExtra,skimr) 
-
-#establecer semilla para hacer replicable el proceso
-set.seed(10101)
-
-#crear variables no lineales para especificaciones más complejas
-datos$estrato_4 <- datos$estrato^4
-datos$exp_trabajo_actual_2 <- datos$exp_trabajo_actual^2
-
-#Dividir la muestra para que el 70% se utilice para entrenamiento y el 30% para pruebas
-inTrain <- createDataPartition(
-  y = datos$log_salario_m,  
-  p = .70, 
-  list = FALSE
-)
-
-training <- datos[ inTrain,]
-testing  <- datos[-inTrain,]
-
-#Punto 5b
-
-#Definir las especificaciones de los modelos a probar
-modelo_1 <- log_salario_m ~ edad + edad_2
-modelo_2 <- log_salario_m ~ mujer
-modelo_3 <- log_salario_m ~ mujer+ edad + edad_2 + secundaria + media + superior + informal
-modelo_4 <-log_salario_m ~ edad + edad_2 + estrato + busca_trabajo
-modelo_5 <-log_salario_m ~ superior + exp_trabajo_actual
-modelo_6 <-log_salario_m ~ mujer + edad + edad_2 + estrato_4 + busca_trabajo + superior 
-modelo_7 <-log_salario_m ~ mujer + edad + edad_2 + estrato_4 + busca_trabajo + superior + exp_trabajo_actual_2 + hijos_hogar + cabecera
-modelo_8 <-log_salario_m ~ mujer + edad + edad_2 + estrato_4 + busca_trabajo + superior + exp_trabajo_actual_2 + hijos_hogar + cabecera + secundaria + media + informal
-
-modelos <- c(modelo_1,modelo_2,modelo_3,modelo_4,modelo_5,modelo_6,modelo_7,modelo_8)
-
-#función que calcula las predicciónes de y para los modelos y el RMSE
-  t_RMSE <- function(modelos,training, testing, var_y){
-    resultados <- tibble()
-    for (i in 1:length(modelos)) {
-      m <- lm(modelos[[i]], data=training) #saca los betas del modelo con los datos de entrenamiento
-      p <- predict(m, testing) #calcula la variable dependiente con el modelo para los x de prueba
-      score<- RMSE(p, testing[[var_y]]) #calcula el RMSE del modelo estimado
-      resultados <- bind_rows(resultados, tibble(modelo=paste0("modelo",i), RMSE=score)) #llenado de tabla con los resultados 
-    }
-    return(resultados) #devuelve el resultado de la función
-  }
-  
- #calculo de los RMSE de los modelos especificados
-  tabla <- t_RMSE(modelos,training, testing, "log_salario_m") #correr función con los inputs específicos
-  
- #computar los errores de la predicción para el modelo con el error más bajo
-  modelo_error_bajo <- lm(modelo_8,data = training)
-  testing$predictions <- predict(modelo_error_bajo, testing)
-  errores <- with(testing,(log_salario_m-predictions)^2)
-  errores1 <- with(testing,(log_salario_m-predictions))
-  
- #graficar la distribución de los errores del mejor modelo (en valor absoluto y sin valor absoluto)
-  ggplot(testing, aes(x = errores )) +
-    geom_histogram(bins = 50, fill = "darkblue") +
-    labs(x = "error de predicción", y = "Cantidad") +
-    theme_bw()
-  
-  ggplot(testing, aes(x = errores1 )) +
-    geom_histogram(bins = 50, fill = "darkblue") +
-    labs(x = "error de predicción", y = "Cantidad") +
-    theme_bw()
-  
-  #graficar la dispersión entre errores y variable Y
-  plot(errores, testing$log_salario_m, main = "Scatter Plot", xlab = "error de predicción", ylab = "log salario test", pch = 16, col = "blue")
-  plot(errores1, testing$log_salario_m, main = "Scatter Plot", xlab = "error de predicción", ylab = "log salario test", pch = 16, col = "blue")
-  
-  #Punto 5d
-  ctrl <- trainControl(method = "LOOCV") #establece el método de cross-validation a utilizar
-  
-  #se utiliza el método solo con los 2 modelos con los errores predictivos más bajos
-  #para el modelo 7
-  cross_validation_1 <- train(modelo_7,data = datos,method = 'lm',trControl= ctrl)
-  score1<-RMSE(cross_validation_1$pred$pred, datos$log_salario_m) #se guarda el resultado de error de predicción
-  
-  #para el modelo 8
-  cross_validation_2 <- train(modelo_8,data = datos,method = 'lm',trControl= ctrl)
-  score2<-RMSE(cross_validation_2$pred$pred, datos$log_salario_m) #se guarda el resultado de error de predicción
-  
-  #comparar el error del testeo con la validación LOOCV
-  comparativo<- data.frame( Model= c(7, 8),RMSE_vsa= c(as.numeric(tabla[3,2]), as.numeric(tabla[8,2])),RMSE_loocv= c(score1, score2))
+##Fin del código ##
