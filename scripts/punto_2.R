@@ -350,3 +350,41 @@ regresion1$coefficients
 residuos <- residuals(regresion1)
 hist(residuos, breaks = 20, col = "lightblue", main = "Histograma de Residuos")
 curve(dnorm(x, mean = mean(residuos), sd = sd(residuos)), add = TRUE, col = "red")
+
+library(zoo)
+library(lmtest)
+
+resettest(regresion1, power = 2)
+bptest(regresion1)
+
+library(readxl)
+datos_t <- read_excel("C:\Users\USUARIO\Documents\GitHub\problem_set_1\problem_set_1")
+
+#Usar booBootstrap para construir los intervalos de confianza
+
+require(pacman)
+library(bootstrap)
+p_load("boot")
+
+salario<-function(data,index){
+  coef(lm(log_salario_m ~ edad + edad_2 ,data = datos, subset = index))[2]
+}
+
+salario(datos,1:nrow(datos))
+
+bootstrap <- boot(datos, salario, R = 1000)
+coef_bootstrap <- bootstrap$t0
+error_estandar <- apply(bootstrap$t,2,sd)
+
+set.seed(123)
+boot(datos, salario, R = 1000)
+boot_result<- boot(datos, salario, R=1000)
+boot_ci <- boot.ci(boot_result, type = "perc")
+boot_ci
+
+class(salario)
+boot.ci
+
+
+
+
