@@ -325,3 +325,28 @@ grafico_2 <- ggplot(datos, aes(x = salario_mensual, fill = genero)) +
         legend.position = "top") 
 grafico_2
 ##Fin del código ##
+
+#Cargar paquetes necesarios
+#install.packages(pacman)
+require(pacman)
+p_load(rio, skimr, visdat, corrplot, stargazer, tidyverse,rvest, 
+       Hmisc, lattice, survival, Formula, ggplot2, robustHD, psych, 
+       openxlsx, writexl, robotstxt, showtext,boot, bootstrap,readxl)
+
+#Punto 3 Age-Wage profile
+
+#Estimación de los coeficientes
+
+regresion1 <- lm(log_salario_m ~ edad + edad_2,  data=datos)
+stargazer(regresion1,type="text", align = TRUE, 
+          no.space = TRUE, title = "Estimación Salario por Edad",
+          out = "C:/Users/USUARIO/Documents/GitHub/problem_set_1/views/regresion1.tex") 
+summary(regresion1)
+library(stargazer)
+stargazer(regresion1)
+str(regresion1)
+regresion1$coefficients
+
+residuos <- residuals(regresion1)
+hist(residuos, breaks = 20, col = "lightblue", main = "Histograma de Residuos")
+curve(dnorm(x, mean = mean(residuos), sd = sd(residuos)), add = TRUE, col = "red")
