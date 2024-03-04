@@ -385,6 +385,15 @@ boot_ci
 class(salario)
 boot.ci
 
+# Creamos df con las variables x y las y
+coef_boot <- bootstrap$t0
+x <- seq(18, 90, length.out = 100)
+y <- coef_boot[1] + coef_boot[2] * x + coef_boot[3] * x^2
+y_i <- (coef_boot[1]-1.96*error_estandar[1]) + (coef_boot[2]-1.96*error_estandar[2])*x + 
+  (coef_boot[3]-1.96*error_estandar[3])*x^2
+y_s <- (coef_boot[1]+1.96*error_estandar[1]) + (coef_boot[2]+1.96*error_estandar[2])*x + 
+  (coef_boot[3]+1.96*error_estandar[3])*x^2
 
+df <- data.frame(x, y, y_i, y_s)
 
 
