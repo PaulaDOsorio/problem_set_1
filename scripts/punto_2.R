@@ -410,3 +410,23 @@ grafico_3 <- ggplot(df, aes(x = x, y = y)) +
   theme(legend.position = "bottom")
 grafico_3
 
+#Estimar punto máximo
+
+# Definir una función cuadrática
+
+cuadratica <- function(regresion1) {
+  return(-(a*x^2 + b*x + c))  # Agregamos un signo negativo para que encuentre el máximo
+}
+
+# Generar algunos datos de ejemplo
+# Coeficientes del modelo
+coeficientes <- coef(regresion1)
+
+# Extraer los coeficientes relevantes
+beta_1 <- coeficientes["edad"]
+beta_2 <- coeficientes["edad_2"]
+
+# Calcular la edad del punto máximo
+edad_maximo <- -beta_1 / (2 * beta_2)
+print(edad_maximo)
+
