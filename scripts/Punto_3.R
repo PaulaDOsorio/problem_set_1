@@ -38,22 +38,26 @@ require(pacman)
 library(bootstrap)
 p_load("boot")
 
-salariof<-function(data,index){
+salario<-function(data,index){
   coef(lm(log_salario_m ~ edad + edad_2 ,data = datos, subset = index))[2]
 }
 
-salariof(datos,1:nrow(datos))
+salario(datos,1:nrow(datos))
 
 bootstrap <- boot(datos, salariof, R = 1000)
 coef_bootstrap <- bootstrap$t0
 error_estandar <- apply(bootstrap$t,2,sd)
 
 set.seed(123)
-#call the boot function
-boot(datos, salariof, R = 1000)
+boot(datos, salario, R = 1000)
+boot_result<- boot(datos, salario, R=1000)
+boot_ci <- boot.ci(boot_result, type = "perc")
+boot_ci
 
 quantile(salariof, c(0.025, 0.975))
 conf_int <- quantile(salariof, c(0.025, 0.975))
 class(salariof)
+boot.ci
+
 
 
