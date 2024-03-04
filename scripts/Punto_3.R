@@ -58,6 +58,24 @@ quantile(salariof, c(0.025, 0.975))
 conf_int <- quantile(salariof, c(0.025, 0.975))
 class(salariof)
 boot.ci
+plot(boot_ci)
+#realizar gráfico perfil edad-ganancias
 
+ggplot(data = datos , mapping = aes(x = edad , y = log_salario_m))
+ggplot(data = datos , mapping = aes(x = edad , y = log_salario_m)) +
+  geom_point(col = "red" , size = 0.5)
 
+ggplot(data = datos, mapping = aes (x= edad, y = log_salario_m)) +
+  geom_point() +
+  geom_point(data = punto_max, aes(color = "Punto Máximo"), size = 3) +
+  scale_color_manual(values = "red") +
+  labs(title = "Gráfico pefil edad-ganancias")
 
+punto_max <- datos[which.max(datos$log_salario_m), ]
+
+ggplot(data = datos, aes(x = edad, y = log_salario_m)) +
+  geom_point() +
+  geom_point(data = punto_max, aes(color = "Punto Máximo"), size = 3) +
+  scale_color_manual(values = "purple") +
+  labs(title = "Perfil edad - salario")
+errores_estandar <- summary(regresion1)$coefficients[, "Std. Error"]
