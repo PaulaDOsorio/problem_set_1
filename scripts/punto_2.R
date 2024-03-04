@@ -396,4 +396,17 @@ y_s <- (coef_boot[1]+1.96*error_estandar[1]) + (coef_boot[2]+1.96*error_estandar
 
 df <- data.frame(x, y, y_i, y_s)
 
+# Graficar la función
+
+grafico_3 <- ggplot(df, aes(x = x, y = y)) +
+  geom_line(aes(color = "Estimado"), size = 1) +
+  geom_line(aes(x = x, y = y_i, color = "Límite inferior"), linetype = "dotted", size = 1) +
+  geom_line(aes(x = x, y = y_s, color = "Límite superior"), linetype = "dotted", size = 1) +
+  scale_color_manual(name = "", values = c("Estimado" = "black", "Límite inferior" = "blue", "Límite superior" = "red")) +
+  labs(x = "Edad", y = "Log(Salario)") +
+  theme_classic() +
+  scale_x_continuous(limits = c(18, 90)) +
+  geom_vline(xintercept = 43, linetype = "dotted") +
+  theme(legend.position = "bottom")
+grafico_3
 
