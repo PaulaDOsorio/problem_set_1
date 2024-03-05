@@ -438,3 +438,131 @@ beta_2 <- coeficientes["edad_2"]
 edad_maximo <- -beta_1 / (2 * beta_2)
 print(edad_maximo)
 
+
+## Punto 4
+
+install.packages(c("boot","stargazer", "caret"))
+library(boot)
+library(stargazer)
+library(caret)
+
+# a. Wage gap -------------------------------------------------------------
+
+#log(w) = β1 + β2F emale + u 
+
+modelo_1 <- lm(log_salario_m ~ mujer, data = datos)
+
+modelo_2 <- lm(log_salario_m ~ mujer + edad + edad_2 +
+                 secundaria + media + superior + informal, data = datos)
+
+# b. Equal Pay for Equal Work? --------------------------------------------
+
+# i. FWL
+
+modelo_com <- lm(log_salario_m ~ edad + edad_2 +
+                   secundaria + media + superior + informal, data = datos)
+fit_y <- resid(modelo_com)
+
+fit_X <- lm( mujer ~ edad + edad_2 + secundaria + media 
+             + superior + informal, data = datos)
+
+
+modelo_par <- lm(fit_y ~  resid(fit_X), data = datos)
+
+#2. FWL with bootstrap
+
+train <- trainControl(method = "boot", number = 1000)
+
+boot_fn <- function(data, indices) {
+  fit <- lm(log_salario_m ~ edad + edad_2 +
+              secundaria + media + superior + informal, data = data, subset = indices)
+  
+  residuales_fit <- lm( mujer ~ edad + edad_2 + secundaria + media 
+                        + superior + informal, data = datos, subset = indices)
+  
+  modelo_fit <- lm(resid(fit) ~  resid(residuales_X), data = datos, subset = indices)
+  
+  return(coef(modelo_fit)[2])
+}
+
+boot_fn(datos, 1:nrow(datos))
+
+boot_results <- boot(data = datos, statistic = boot_fn, R = 1000)
+
+modelo_list <- list(modelo_1, modelo_2, modelo_par)
+
+stargazer(modelo_list) #default, latex
+
+# c. Plot -----------------------------------------------------------------
+modelo_brecha <- lm(log_salario_m ~ mujer + edad + edad_2 + secundaria + 
+                      media + superior + informal + mujer*edad, data = datos)  
+
+edad_minima = min(datos$edad)
+edad_máxima = max(datos$edad)
+
+salario_hombres <- predict(modelo_brecha, newdata = data.frame(mujer = 0, edad = seq(edad_minima, edad_máxima), 
+                                                               edad_2 = seq(edad_minima, edad_máxima)^2,
+                                                               secundaria = 0, media = 0, superior = 0,
+                                                               informal = 0), interval = "confidence")
+
+salario_mujeres <- predict(modelo_brecha, newdata = data.frame(mujer = 1, edad = seq(edad_minima, edad_máxima), 
+                                                               edad_2 = seq(edad_minima, edad_máxima)^2,
+                                                               secundaria = 0, media = 0, superior = 0,
+                                                               informal = 0), interval = "confidence")
+
+# Graficar los perfiles de salario en función de la edad para hombres y mujeres
+plot(seq(edad_minima, edad_máxima), salario_hombres[, "fit"], type = "l", col = "#9A32CD", 
+     ylim = range(salario_hombres[, "fit"], salario_mujeres[, "fit"]),
+     xlab = "Edad", ylab = "Salario") 
+lines(seq(edad_minima, edad_máxima), salario_mujeres[, "fit"], type = "l", col = "#CD2626") 
+legend("topright", legend = c("Hombres", "Mujeres"), col = c("#9A32CD", "#CD2626"), lty = 1)
+
+
+# Encontrar las edades en las que el salario alcanza su máximo para hombres y mujeres
+edad_max_salario_hombres <- seq(edad_minima, edad_máxima)[which.max(salario_hombres[, "fit"])]
+edad_max_salario_mujeres <- seq(edad_minima, edad_máxima)[which.max(salario_mujeres[, "fit"])]
+
+# Imprimir las edades en las que el salario alcanza su máximo para hombres y mujeres
+cat("Edad en la que el salario alcanza su máximo para hombres:", edad_max_salario_hombres, "\n")
+cat("Edad en la que el salario alcanza su máximo para mujeres:", edad_max_salario_mujeres, "\n")
+
+
+# Coeficientes y errores estándar
+coeficientes <- coef(modelo_brecha)
+errores <- summary(modelo_brecha)$coefficients[, "Std. Error"]
+
+
+# Calcular la "edad pico" y sus errores estándar por género
+peak_age_male <- -coeficientes["edad"] / (2 * (coeficientes["edad_2"]))
+peak_age_female <- -(coeficientes["edad"]+coeficientes["mujer:edad"]) / (2 * (coeficientes["edad_2"]))
+
+# Calcular los errores estándar para la "edad pico" por género
+se_peak_age_male <- sqrt((errores["edad"] / (2 * coeficientes["edad_2"]))^2 + ((coeficientes["edad"] / (2 * coeficientes["edad_2"]^2)) * errores["edad_2"])^2)
+se_peak_age_female <- sqrt(((errores["edad"] + errores["mujer:edad"]) / (2 * coeficientes["edad_2"]))^2 + (((coeficientes["edad"] + coeficientes["mujer:edad"]) / (2 * coeficientes["edad_2"]^2)) * errores["edad_2"])^2)
+
+#Invervalos de confianza
+
+ci.female = cat(peak_age_female-1.96*se_peak_age_female,
+                peak_age_female+1.96*se_peak_age_female)
+
+ci.male = cat(peak_age_male-1.96*se_peak_age_male,
+                peak_age_male+1.96*se_peak_age_male)
+
+#Salario en edad pico por genero
+salario_mujer <- coeficientes["(Intercept)"] + coeficientes["mujer"] + 
+  coeficientes["edad"] * peak_age_female +
+  coeficientes["edad_2"] * (peak_age_female^2) +
+  coeficientes["mujer:edad"] * peak_age_female
+
+salario_hombre <- coeficientes["(Intercept)"] +  
+  coeficientes["edad"] * peak_age_male +
+  coeficientes["edad_2"] * (peak_age_male^2) 
+
+# Contraste de las edades pico utilizando pruebas estadísticas relevantes
+# Por ejemplo, prueba de hipótesis para comparar las edades pico entre géneros
+t_statistic <- (salario_hombre - salario_mujer) / sqrt(salario_hombre^2 + salario_mujer^2)
+degrees_of_freedom <- min(length(datos$mujer[datos$mujer == 1]), length(datos$mujer[datos$mujer == 0])) - 1
+p_value <- 2 * pt(abs(t_statistic), df = degrees_of_freedom)
+
+cat("T-Statistic:", t_statistic, "\n")
+cat("P-Value:", p_value, "\n")
